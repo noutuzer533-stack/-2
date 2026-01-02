@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Для самой лучшей</title>
+    <style>
+        body {
+            background: radial-gradient(circle, #1b2735 0%, #090a0f 100%);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            text-align: center;
+            touch-action: none;
+        }
+
+        /* СНЕЖИНКИ */
+        .snowflake { position: fixed; top: -10px; color: #fff; user-select: none; z-index: 1000; pointer-events: none; animation: fall linear infinite; }
+        @keyframes fall { to { transform: translateY(105vh); } }
+
+        .container { background: rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 20px; backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); width: 400px; min-height: 300px; transition: 0.5s; z-index: 10; }
+        .hidden { display: none !important; }
+        .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 50px; background: linear-gradient(45deg, #00d4ff, #005f73); color: white; font-size: 1em; cursor: pointer; transition: 0.2s; }
+        .btn:hover { transform: scale(1.03); box-shadow: 0 0 15px #00d4ff; }
+        .back-btn { background: linear-gradient(45deg, #ff4b2b, #ff416c); margin-top: 20px; }
+        
+        #game-area { width: 100%; height: auto; aspect-ratio: 800 / 600; background: #000; border-radius: 15px; border: 1px solid #333; }
+        #secretText { font-size: 0.95em; line-height: 1.5; margin-top: 15px; color: #00d4ff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="snow-container"></div>
+
+    <div id="main-menu" class="container">
+        <h1>ку самая лутшая девушка в мире</h1>
+        <button class="btn" onclick="alert('не рабоате и за тогочто автор сайта еблан')">игра 3д</button>
+        <button class="btn" onclick="showDifficultyMenu()">игра 2д</button>
+        <button class="btn" onclick="startQuiz()">виктарина</button>
+        <hr style="border: 0.5px solid rgba(255,255,255,0.2); margin: 20px 0;">
+        <button class="btn" id="nextBtn" onclick="nextStep()">прочитай это</button>
+        <p id="secretText"></p>
+    </div>
+
+    <div id="menu-quiz" class="container hidden">
+        <h1 id="quiz-question-title">Вопрос</h1>
+        <p id="quiz-question-text"></p>
+        <div id="quiz-options"></div>
+        <button class="btn back-btn" onclick="location.reload()">назад</button>
+    </div>
+
+    <div id="menu-2d" class="container hidden" style="width: 90vw; max-width: 800px;">
+        <div id="difficulty-menu">
+            <h2>Выбери сложность</h2>
+            <button class="btn" onclick="startGame2D(1.0)">Легкий</button>
+            <button class="btn" onclick="startGame2D(2.0)">Сложный</button>
+        </div>
+        <canvas id="game-area" width="800" height="600" class="hidden"></canvas>
+        <button class="btn back-btn" onclick="location.reload()">назад</button>
+    </div>
+
+    <script>
+        function createSnow() {
+            const container = document.getElementById('snow-container');
+            for (let i = 0; i < 50; i++) {
+                let snow = document.createElement('div');
+                snow.className = 'snowflake';
+                snow.innerText = '❄';
+                snow.style.left = Math.random() * 100 + 'vw';
+                snow.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snow.style.opacity = Math.random();
+                snow.style.fontSize = Math.random() * 10 + 10 + 'px';
+                container.appendChild(snow);
+            }
+        }
+        createSnow();
+
+        let clickCount = 0;
+        function nextStep() {
+            clickCount++;
+            if (clickCount < 8) {
+                document.getElementById('nextBtn').innerText = "нажми еще";
+            } else {
+                document.getElementById('secretText').innerText = "ну че далистала скок я с тобой общаюсь я понял что с тобой общаться только кайф и смеяться в 5 утра особено весело знай что с тобой общаться это только кайф";
+                document.getElementById('nextBtn').classList.add('hidden');
+            }
+        }
+
+        const questions = [
+            { q: "как меня зовут", a: ["понос", "даня", "кашатник", "пон соль", "тупой"], correct: [2] },
+            { q: "писать ага можно", a: ["1 можетбыть", "2 нет", "3 да", "4 а я ебу?", "5 хз"], correct: [1] },
+            { q: "я живу в подазулупеске", a: ["да", "да"], correct: [0, 1] },
+            { q: "твое либое аниме", a: ["1 пакет пила", "2 пила", "3 пакет пила стрела"], correct: [2] },
+            { q: "у меня седня кот сташил калбоссу", a: ["да", "да"], correct: [0, 1] }
+        ];
+        let curQ = 0, quizScore = 0;
+        function startQuiz() { curQ = 0; quizScore = 0; openMenu('menu-quiz'); showQ(); }
+        function showQ() {
+            const q = questions[curQ];
+            document.getElementById('quiz-question-text').innerText = q.q;
+            const optDiv = document.getElementById('quiz-options'); optDiv.innerHTML = '';
+            q.a.forEach((t, i) => {
+                const b = document.createElement('button'); b.className = 'btn'; b.innerText = t;
+                b.onclick = () => {
+                    if (q.correct.includes(i)) quizScore++;
+                    curQ++;
+                    if (curQ < questions.length) showQ();
+                    else { alert("Правильных ответов: " + quizScore + " из " + questions.length); location.reload(); }
+                };
+                optDiv.appendChild(b);
+            });
+        }
+
+        function openMenu(id) {
+            document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        const canvas = document.getElementById('game-area');
+        const ctx = canvas.getContext('2d');
+        const W = 800, H = 600, WORLD_W = 3000, WORLD_H = 3000;
+        let player = { x: WORLD_W/2, y: WORLD_H/2, size: 12, speed: 7 };
+        let bullets = [], zombies = [], score = 0, running = false, mult = 1;
+        let joystick = { active: false, x: 100, y: 500, curX: 100, curY: 500, rad: 45, hitRad: 70 };
+
+        function showDifficultyMenu() { openMenu('menu-2d'); document.getElementById('difficulty-menu').classList.remove('hidden'); canvas.classList.add('hidden'); }
+        
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.touches ? e.touches.clientX : e.clientX;
+            const cy = e.touches ? e.touches.clientY : e.clientY;
+            return { x: (cx - rect.left) * (W / rect.width), y: (cy - rect.top) * (H / rect.height) };
+        }
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(running) handleDown(getPos(e)); }, {passive: false});
+        canvas.addEventListener('mousedown', (e) => { if(running) handleDown(getPos(e)); });
+
+        function handleDown(pos) {
+            let dx = pos.x - joystick.x, dy = pos.y - joystick.y;
+            if (Math.sqrt(dx*dx + dy*dy) < joystick.hitRad) joystick.active = true;
+            else shoot(pos.x, pos.y);
+        }
+
+        window.addEventListener('touchmove', (e) => { if(joystick.active) handleMove(getPos(e)); }, {passive: false});
+        window.addEventListener('mousemove', (e) => { if(joystick.active) handleMove(getPos(e)); });
+        function handleMove(p) {
+            let dx = p.x - joystick.x, dy = p.y - joystick.y, d = Math.sqrt(dx*dx + dy*dy);
+            let limit = joystick.rad;
+            joystick.curX = joystick.x + (dx/d) * Math.min(d, limit);
+            joystick.curY = joystick.y + (dy/d) * Math.min(d, limit);
+        }
+        window.addEventListener('mouseup', () => { joystick.active = false; joystick.curX = joystick.x; joystick.curY = joystick.y; });
+        window.addEventListener('touchend', () => { joystick.active = false; joystick.curX = joystick.x; joystick.curY = joystick.y; });
+
+        function shoot(mx, my) {
+            const camX = player.x - W/2, camY = player.y - H/2;
+            const angle = Math.atan2((my + camY) - player.y, (mx + camX) - player.x);
+            bullets.push({ x: player.x, y: player.y, sx: Math.cos(angle) * 15, sy: Math.sin(angle) * 15 });
+        }
+
+        function startGame2D(d) {
+            mult = d; running = true; score = 0;
+            document.getElementById('difficulty-menu').classList.add('hidden');
+            canvas.classList.remove('hidden');
+            setInterval(() => { if(running) spawnZombie(); }, 1000 / mult);
+            gameLoop();
+        }
+
+        function spawnZombie() {
+            const a = Math.random() * 6.28;
+            zombies.push({ x: player.x + Math.cos(a)*600, y: player.y + Math.sin(a)*600, size: 12, speed: 1.5 * mult });
+        }
+
+        function update() {
+            if (joystick.active) {
+                player.x += ((joystick.curX - joystick.x)/joystick.rad) * player.speed;
+                player.y += ((joystick.curY - joystick.y)/joystick.rad) * player.speed;
+            }
+            player.x = Math.max(15, Math.min(WORLD_W-15, player.x));
+            player.y = Math.max(15, Math.min(WORLD_H-15, player.y));
+            bullets.forEach((b, i) => { b.x += b.sx; b.y += b.sy; if(b.x<0 || b.x>WORLD_W) bullets.splice(i,1); });
+            zombies.forEach((z, i) => {
+                let dx = player.x-z.x, dy = player.y-z.y, d = Math.sqrt(dx*dx+dy*dy);
+                z.x += (dx/d)*z.speed; z.y += (dy/d)*z.speed;
+                if(d < 22) { running = false; alert("Счет: " + score); location.reload(); }
+                bullets.forEach((b, bi) => { if(Math.sqrt((z.x-b.x)**2+(z.y-b.y)**2)<25) { zombies.splice(i,1); score++; bullets.splice(bi, 1); } });
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+            ctx.save(); ctx.translate(-(player.x-W/2), -(player.y-H/2));
+            ctx.strokeStyle = '#333';
+            for(let i=0; i<=WORLD_W; i+=200) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,WORLD_H); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(WORLD_W,i); ctx.stroke(); }
+            ctx.fillStyle = '#00d4ff'; ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, 7); ctx.fill();
+            ctx.fillStyle = 'red'; zombies.forEach(z => { ctx.beginPath(); ctx.arc(z.x, z.y, z.size, 0, 7); ctx.fill(); });
+            ctx.fillStyle = 'white'; bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, 7); ctx.fill(); });
+            ctx.restore();
+            ctx.globalAlpha = 0.3; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(joystick.x, joystick.y, joystick.rad, 0, 7); ctx.fill();
+            ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.arc(joystick.curX, joystick.curY, 15, 0, 7); ctx.fill();
+            ctx.globalAlpha = 1; ctx.fillStyle = "white"; ctx.fillText("Score: " + score, 20, 30);
+        }
+        function gameLoop() { if(running) { update(); draw(); requestAnimationFrame(gameLoop); } }
+    </script>
+</body>
+</html>
